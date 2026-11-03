@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#FFF8E7">
+  <meta name="description" content="A browser-based CPU scheduling simulator for FCFS, SJF, SRTF and Round Robin. Drop processes onto the Gantt chart, drag them to change arrival and burst, and read the per-process metrics.">
+  <title>CPU Scheduling Simulator · CSE513</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect x='3' y='3' width='34' height='34' fill='%230A0A0A'/%3E%3Crect x='1' y='1' width='34' height='34' fill='%23FF3878' stroke='%230A0A0A' stroke-width='2.5'/%3E%3Cpath d='M8 14h9v8H8zM17 14h6v8h-6zM23 14h6v8h-6z' fill='%23FFF8E7' stroke='%230A0A0A' stroke-width='2'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./styles.css"><script type="module" src="./app.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#simulator">Skip to the Gantt chart</a>
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <span class="stamp">CSE513 <span aria-hidden="true">✳</span> Assignment 1</span>
+    <nav aria-label="Sections"><a href="#simulator">Chart</a><a href="#outcome-title">Results</a><a href="#rules">Rules</a></nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="intro" aria-labelledby="page-title">
+    <h1 id="page-title">CPU Scheduling <mark>Simulator</mark></h1>
+    <p class="dek">Build the workload right on the Gantt chart. Drop processes on it, drag them around, and watch the scheduler re-plan the CPU.</p>
+  </section>
+
+  <section id="simulator" class="workbench card" aria-label="Gantt chart workbench">
+    <div class="toolbar">
+      <div class="tool-group" role="group" aria-label="Load a workload">
+        <span class="tool-label">Workload</span>
+        <button class="chip preset is-selected" id="load-a" type="button" aria-pressed="true">A</button>
+        <button class="chip preset" id="load-b" type="button" aria-pressed="false">B</button>
+        <button class="chip preset" id="load-boundary" type="button" aria-pressed="false" title="P2 arrives exactly when P1's quantum ends">Edge case</button>
+        <button class="chip ghost" id="clear-all" type="button">Clear</button>
+      </div>
+      <fieldset class="tool-group policy-group"><legend class="tool-label">Policy</legend>
+        <label class="chip policy-option"><input type="radio" name="algorithm" value="FCFS"><span>FCFS</span></label>
+        <label class="chip policy-option"><input type="radio" name="algorithm" value="SJF"><span>SJF</span></label>
+        <label class="chip policy-option"><input type="radio" name="algorithm" value="SRTF" checked><span>SRTF</span></label>
+        <label class="chip policy-option"><input type="radio" name="algorithm" value="RR"><span>RR</span></label>
+      </fieldset>
+      <div class="tool-group quantum-group"><label class="tool-label" for="quantum">Quantum</label><input id="quantum" class="quantum-input" type="number" min="1" max="1000000" step="1" value="2" aria-describedby="quantum-hint"><span id="quantum-hint" class="sr-only">Round Robin only: the longest single turn</span></div>
+    </div>
+
+    <div class="tray">
+      <button class="new-process" id="new-process" type="button" aria-describedby="tray-hint"><span aria-hidden="true">＋</span> New process</button>
+      <p id="tray-hint" class="tray-hint"><b>Drag</b> it onto the chart: where you drop it is its arrival time. Then drag <span class="arrival-dot" aria-hidden="true"></span> to move the arrival, drag the <span class="grip-sample" aria-hidden="true"></span> end to change the burst, and <b>click a name</b> to edit, reorder or delete it.</p>
+    </div>
+
+    <div class="chart-head">
+      <div><h2 id="result-title">SRTF · Shortest Remaining Time First</h2><p id="policy-description" class="policy-description"></p></div>
+      <span id="timeline-meta" class="meta"></span>
+    </div>
+    <p id="result-error" class="result-error" role="alert" hidden></p>
+
+    <div class="timeline-viewport" id="timeline-viewport" tabindex="0" role="region" aria-label="Gantt chart, scroll horizontally">
+      <div id="timeline-canvas" class="timeline-canvas">
+        <div id="timeline-ruler" class="lane-ruler"></div>
+        <div class="gantt-row"><span class="lane-name cpu-lane-name">CPU</span><div class="gantt-rail"><div id="gantt" class="gantt" role="img" aria-label="CPU Gantt chart"></div></div></div>
+        <p class="lanes-caption" aria-hidden="true">Processes <span>· solid = running · light stripes = waiting</span></p>
+        <div id="process-lanes"></div>
+        <div class="drop-lane" id="drop-lane"><span>Drop ＋ New process anywhere on the chart</span></div>
+        <div id="drop-guide" class="drop-guide" hidden><span id="drop-guide-tag"></span></div>
+        <div id="lane-playhead" class="timeline-playhead"><span class="playhead-tag" id="playhead-tag">0</span></div>
+      </div>
+    </div>
+    <p id="scroll-hint" class="scroll-hint" hidden></p>
+    <div id="process-legend" class="process-legend" aria-label="How to read the chart"></div>
+
+    <div class="replay">
+      <div class="playback-controls">
+        <div class="transport-buttons">
+          <button class="icon-button" type="button" id="reset-playback" aria-label="Back to time 0" title="Back to time 0"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 4v12m11-12L7 10l9 6z"/></svg></button>
+          <button class="play-button" type="button" id="play-playback"><svg viewBox="0 0 20 20" aria-hidden="true" id="play-icon"><path d="m6 3 11 7-11 7z"/></svg><span id="play-label">Play</span></button>
+          <button class="icon-button with-label" type="button" id="next-event" aria-label="Next event" title="Jump to the next arrival or switch"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m4 4 9 6-9 6zM15 4v12"/></svg><span>Next event</span></button>
+        </div>
+        <div class="scrubber-group"><label for="time-scrubber" class="sr-only">Time</label><input type="range" id="time-scrubber" min="0" max="15" step="0.01" value="0"><div class="scrubber-times"><span>time <b id="playback-position">0.0</b></span><span id="playback-total"></span></div></div>
+        <div class="speed-control"><label for="playback-speed">Speed</label><select id="playback-speed"><option value="1">1×</option><option value="2" selected>2×</option><option value="4">4×</option></select></div>
+      </div>
+      <p class="decision-bar"><span class="decision-mark">Replay</span><span id="decision-text">Press Play or Next event to step through the schedule.</span></p>
+    </div>
+    <details class="interval-details"><summary>Show every interval as text <span id="interval-count"></span></summary><ol id="interval-list" class="interval-list"></ol></details>
+  </section>
+
+  <section class="outcome" aria-labelledby="outcome-title">
+    <div class="section-title"><h2 id="outcome-title">Results</h2><span class="meta">All values in time units</span></div>
+    <div class="metric-strip" aria-label="Average metrics">
+      <div class="metric-item"><span>Average turnaround time</span><strong id="avg-turnaround">–</strong><p>completion − arrival</p></div>
+      <div class="metric-item is-hot"><span>Average waiting time</span><strong id="avg-waiting">–</strong><p>turnaround − burst</p></div>
+      <div class="metric-item"><span>Average response time</span><strong id="avg-response">–</strong><p>first start − arrival</p></div>
+    </div>
+    <div class="table-scroll card"><table class="results-table"><caption class="sr-only">Scheduling metrics for every process, in time units</caption><thead><tr><th scope="col">Process</th><th scope="col">Arrival</th><th scope="col">Burst</th><th scope="col">First start</th><th scope="col">Completion</th><th scope="col">Turnaround</th><th scope="col">Waiting</th><th scope="col">Response</th></tr></thead><tbody id="metrics-rows"></tbody></table></div>
+    <div id="invariant-status" class="invariant-status"></div>
+  </section>
+</main>
+
+<section id="rules" class="rules" aria-labelledby="rules-title">
+  <div class="wrap">
+    <div class="section-title"><h2 id="rules-title">How each policy chooses the next process</h2></div>
+    <ol class="rule-grid">
+      <li><span class="rule-name">FCFS · First-Come, First-Served</span><p>The process that arrived first runs until it finishes. Then the next earliest arrival runs.</p></li>
+      <li><span class="rule-name">SJF · Shortest Job First</span><p>Whenever the CPU becomes free, the waiting process with the shortest burst runs until it finishes. A running process is never interrupted.</p></li>
+      <li><span class="rule-name">SRTF · Shortest Remaining Time First</span><p>The process with the least work left runs. A new arrival interrupts it only if it needs strictly less time; on a tie, the running process continues.</p></li>
+      <li><span class="rule-name">RR · Round Robin</span><p>Processes take turns of at most one quantum in a first-in, first-out queue. A process that arrives exactly when a turn ends joins the queue before the process that was just interrupted. The <b>Edge case</b> workload shows this.</p></li>
+    </ol>
+    <dl class="formula-strip">
+      <div><dt>Turnaround</dt><dd>completion − arrival</dd></div>
+      <div><dt>Waiting</dt><dd>turnaround − burst</dd></div>
+      <div><dt>Response</dt><dd>first start − arrival</dd></div>
+    </dl>
+    <p class="tie-note">Model: one CPU, one CPU burst per process, no I/O, zero-cost context switches, whole-number times (running from 2 to 5 is 3 units). Ties go to the earlier arrival, then the process listed higher on the chart. When nothing is waiting the CPU idles until the next arrival (striped blocks).</p>
+  </div>
+  <footer class="site-footer wrap"><span>CPU Scheduling Simulator · CSE513 Assignment 1</span><span>Models scheduling policies. It does not reproduce Ubuntu’s actual scheduler.</span></footer>
+</section>
+
+<dialog id="process-editor" class="editor card" aria-labelledby="editor-title">
+  <form id="editor-form" method="dialog" novalidate>
+    <h2 id="editor-title">Edit process</h2>
+    <div class="editor-fields">
+      <label>Process ID<input id="edit-id" type="text" maxlength="24" autocomplete="off" required></label>
+      <label>Arrival time<input id="edit-arrival" type="number" min="0" max="1000000" step="1" required></label>
+      <label>CPU burst<input id="edit-burst" type="number" min="1" max="1000000" step="1" required></label>
+    </div>
+    <p id="editor-error" class="error-message" role="alert" hidden></p>
+    <div class="editor-actions">
+      <button type="button" class="chip" id="edit-up">↑ Move up</button>
+      <button type="button" class="chip" id="edit-down">↓ Move down</button>
+      <button type="button" class="chip danger" id="edit-delete">Delete</button>
+      <span class="spacer"></span>
+      <button type="button" class="chip ghost" id="edit-cancel">Cancel</button>
+      <button type="submit" class="chip primary" id="edit-save">Save</button>
+    </div>
+    <p class="editor-note">Order matters: on a tie, the process listed higher wins.</p>
+  </form>
+</dialog>
+<div id="drag-tip" class="drag-tip" hidden></div>
+<noscript><p class="noscript-message">Enable JavaScript to use the CPU scheduling simulator.</p></noscript>
+</body>
+</html>
