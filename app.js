@@ -137,7 +137,11 @@ function run() {
   $('policy-mode').title = preemptive ? 'What does preemptive mean?' : 'What does non-preemptive mean?';
   if (openMode === 'pre' || openMode === 'non') showModeHelp(preemptive ? 'pre' : 'non');
   $('policy-mode-text').textContent = policies[selected].mode;
-  $('quantum').disabled = selected !== 'RR';
+  // Only Round Robin uses a quantum, so the field (and its explanation) is shown only for RR.
+  const usesQuantum = selected === 'RR';
+  $('quantum').disabled = !usesQuantum;
+  document.querySelector('.quantum-group').hidden = !usesQuantum;
+  if (!usesQuantum && openMode === 'quantum') showModeHelp(null);
   $('quantum').removeAttribute('aria-invalid');
   $('result-error').hidden = true;
   if (!processes.length) { renderEmpty(); return; }

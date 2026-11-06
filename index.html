@@ -70,7 +70,7 @@
       </div>
       <div class="mode-help-body" data-mode-panel="quantum" hidden>
         <h3 class="mode-help-title">Quantum: the longest single turn in Round Robin</h3>
-        <p>In Round Robin each process may use the CPU for at most one quantum at a time. When its quantum runs out and it is not finished, it goes to the back of the queue and the next process gets a turn. A process that finishes early simply gives up the rest of its turn. Only RR uses the quantum, so the field is greyed out for the other policies.</p>
+        <p>In Round Robin each process may use the CPU for at most one quantum at a time. When its quantum runs out and it is not finished, it goes to the back of the queue and the next process gets a turn. A process that finishes early simply gives up the rest of its turn. Only RR uses the quantum, so the field appears only when RR is selected.</p>
         <figure class="mini-chart" aria-label="Example with quantum 2: A needs 5 units, B needs 3, both arrive at 0.">
           <figcaption>Example with <b>quantum = 2</b>: <b>A</b> needs 5 units and <b>B</b> needs 3; both arrive at 0.</figcaption>
           <div class="mini-row"><span class="mini-label">CPU</span><div class="mini-track"><span class="mini-block" style="flex-grow:2">A 0–2</span><span class="mini-block is-b" style="flex-grow:2">B 2–4</span><span class="mini-block" style="flex-grow:2">A 4–6</span><span class="mini-block is-b" style="flex-grow:1">B 6–7</span><span class="mini-block" style="flex-grow:1">A 7–8</span></div></div>

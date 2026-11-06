@@ -113,6 +113,7 @@ button.mode-badge:hover, button.mode-badge[aria-expanded=true] { box-shadow: 3px
 .policy-option span { font: 800 15px var(--mono); }
 .policy-option:has(input:focus-visible) { outline: 3px solid var(--hot); outline-offset: 3px; }
 .quantum-input { width: 76px; height: 40px; padding: 6px 10px; border: var(--b); border-radius: 0; background: var(--white); font: 800 16px var(--mono); }
+.quantum-group[hidden] { display: none; }
 .quantum-input:disabled { border-style: dashed; background: transparent; color: var(--ink-2); }
 .quantum-input[aria-invalid=true] { background: #FFD9DC; border-color: var(--bad); }
 
