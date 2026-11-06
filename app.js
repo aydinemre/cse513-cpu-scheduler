@@ -68,8 +68,27 @@ function nextId() {
   return `P${count}`;
 }
 
+// Any change to the chart turns the workload into "Custom" and remembers it, so the user can switch to A or B
+// and come back to their own processes with the Custom button.
+let customSnapshot = null;
+function selectWorkloadButton(name) {
+  for (const key of ['A', 'B', 'boundary', 'custom']) {
+    const button = $(`load-${key.toLowerCase()}`);
+    button.classList.toggle('is-selected', key === name);
+    button.setAttribute('aria-pressed', String(key === name));
+  }
+}
+
 function markCustomWorkload() {
-  for (const key of ['load-a', 'load-b', 'load-boundary']) { $(key).classList.remove('is-selected'); $(key).setAttribute('aria-pressed', 'false'); }
+  customSnapshot = { processes: processes.map(process => ({ ...process })), colorCounter };
+  selectWorkloadButton('custom');
+}
+
+function loadCustomWorkload() {
+  processes = customSnapshot ? customSnapshot.processes.map(process => ({ ...process })) : [];
+  colorCounter = customSnapshot ? customSnapshot.colorCounter : 0;
+  selectWorkloadButton('custom');
+  run();
 }
 
 function setWorkload(name) {
@@ -79,11 +98,7 @@ function setWorkload(name) {
     document.querySelector('input[name="algorithm"][value="RR"]').checked = true;
     $('quantum').value = 2;
   }
-  for (const key of ['A', 'B', 'boundary']) {
-    const selected = name === key;
-    $(`load-${key.toLowerCase()}`).classList.toggle('is-selected', selected);
-    $(`load-${key.toLowerCase()}`).setAttribute('aria-pressed', String(selected));
-  }
+  selectWorkloadButton(name);
   run();
 }
 
@@ -629,6 +644,7 @@ $('quantum').addEventListener('input', run);
 $('load-a').addEventListener('click', () => setWorkload('A'));
 $('load-b').addEventListener('click', () => setWorkload('B'));
 $('load-boundary').addEventListener('click', () => setWorkload('boundary'));
+$('load-custom').addEventListener('click', loadCustomWorkload);
 $('clear-all').addEventListener('click', () => { processes = []; colorCounter = 0; markCustomWorkload(); run(); });
 $('new-process').addEventListener('pointerdown', startNewDrag);
 $('new-process').addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); addProcess(); } });
