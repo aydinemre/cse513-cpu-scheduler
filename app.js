@@ -118,6 +118,9 @@ function run() {
   const preemptive = policies[selected].preemptive;
   $('policy-mode').textContent = preemptive ? 'Preemptive' : 'Non-preemptive';
   $('policy-mode').classList.toggle('is-preemptive', preemptive);
+  $('policy-mode').dataset.modeHelp = preemptive ? 'pre' : 'non';
+  $('policy-mode').title = preemptive ? 'What does preemptive mean?' : 'What does non-preemptive mean?';
+  if (openMode === 'pre' || openMode === 'non') showModeHelp(preemptive ? 'pre' : 'non');
   $('policy-mode-text').textContent = policies[selected].mode;
   $('quantum').disabled = selected !== 'RR';
   $('quantum').removeAttribute('aria-invalid');
@@ -666,4 +669,20 @@ $('time-scrubber').addEventListener('keydown', event => {
   renderFrame(target, true);
 });
 document.addEventListener('visibilitychange', () => { if (document.hidden) pausePlayback(); });
+
+// Clicking "Preemptive", "Non-preemptive" or "Quantum" explains it with a two-process example; clicking it again closes it.
+let openMode = null;
+function showModeHelp(kind) {
+  openMode = kind;
+  $('mode-help').hidden = kind === null;
+  $('mode-help').classList.toggle('is-preemptive', kind === 'pre');
+  $('mode-help').classList.toggle('is-quantum', kind === 'quantum');
+  for (const body of document.querySelectorAll('[data-mode-panel]')) body.hidden = body.dataset.modePanel !== kind;
+  for (const trigger of document.querySelectorAll('[data-mode-help]')) trigger.setAttribute('aria-expanded', String(trigger.dataset.modeHelp === kind));
+}
+for (const trigger of document.querySelectorAll('[data-mode-help]')) {
+  trigger.addEventListener('click', () => showModeHelp(openMode === trigger.dataset.modeHelp ? null : trigger.dataset.modeHelp));
+}
+$('mode-help-close').addEventListener('click', () => { const back = document.querySelector(`[data-mode-help="${openMode}"]`); showModeHelp(null); back?.focus(); });
+$('mode-help').addEventListener('keydown', event => { if (event.key === 'Escape') $('mode-help-close').click(); });
 setWorkload('A');

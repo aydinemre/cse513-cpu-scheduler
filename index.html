@@ -33,17 +33,51 @@
         <button class="chip ghost" id="clear-all" type="button">Clear</button>
       </div>
       <fieldset class="tool-group policy-group"><legend class="tool-label">Policy</legend>
-        <div class="policy-cluster" role="group" aria-labelledby="cluster-non"><span class="cluster-tag" id="cluster-non"><span class="mode-icon" aria-hidden="true"><i></i></span>Non-preemptive</span><div class="cluster-chips">
+        <div class="policy-cluster" role="group" aria-labelledby="cluster-non"><button type="button" class="cluster-tag" id="cluster-non" data-mode-help="non" aria-controls="mode-help" aria-expanded="false" title="What does non-preemptive mean?"><span class="mode-icon" aria-hidden="true"><i></i></span>Non-preemptive <span class="help-mark" aria-hidden="true">?</span></button><div class="cluster-chips">
           <label class="chip policy-option"><input type="radio" name="algorithm" value="FCFS"><span>FCFS</span></label>
           <label class="chip policy-option"><input type="radio" name="algorithm" value="SJF"><span>SJF</span></label>
         </div></div>
-        <div class="policy-cluster is-preemptive" role="group" aria-labelledby="cluster-pre"><span class="cluster-tag" id="cluster-pre"><span class="mode-icon is-split" aria-hidden="true"><i></i><i></i></span>Preemptive</span><div class="cluster-chips">
+        <div class="policy-cluster is-preemptive" role="group" aria-labelledby="cluster-pre"><button type="button" class="cluster-tag" id="cluster-pre" data-mode-help="pre" aria-controls="mode-help" aria-expanded="false" title="What does preemptive mean?"><span class="mode-icon is-split" aria-hidden="true"><i></i><i></i></span>Preemptive <span class="help-mark" aria-hidden="true">?</span></button><div class="cluster-chips">
           <label class="chip policy-option"><input type="radio" name="algorithm" value="SRTF" checked><span>SRTF</span></label>
           <label class="chip policy-option"><input type="radio" name="algorithm" value="RR"><span>RR</span></label>
         </div></div>
       </fieldset>
-      <div class="tool-group quantum-group"><label class="tool-label" for="quantum">Quantum</label><input id="quantum" class="quantum-input" type="number" min="1" max="1000000" step="1" value="2" aria-describedby="quantum-hint"><span id="quantum-hint" class="sr-only">Round Robin only: the longest single turn</span></div>
+      <div class="tool-group quantum-group"><button type="button" class="cluster-tag quantum-tag" data-mode-help="quantum" aria-controls="mode-help" aria-expanded="false" title="What is the quantum?">Quantum <span class="help-mark" aria-hidden="true">?</span></button><input id="quantum" aria-label="Quantum" class="quantum-input" type="number" min="1" max="1000000" step="1" value="2" aria-describedby="quantum-hint"><span id="quantum-hint" class="sr-only">Round Robin only: the longest single turn</span></div>
     </div>
+
+    <section id="mode-help" class="mode-help" aria-label="Preemptive or non-preemptive" hidden>
+      <button type="button" class="mode-help-close" id="mode-help-close" aria-label="Close explanation">×</button>
+      <div class="mode-help-body" data-mode-panel="non" hidden>
+        <h3 class="mode-help-title">Non-preemptive: the CPU is never taken away</h3>
+        <p>Once a process gets the CPU it keeps it until its whole burst is done. The scheduler only decides when the CPU becomes free. A process that arrives in the meantime waits, even if it is much shorter.</p>
+        <figure class="mini-chart" aria-label="Example: A arrives at 0 needing 6 units, B arrives at 1 needing 2 units.">
+          <figcaption>Example: <b>A</b> arrives at 0 and needs 6 units; <b>B</b> arrives at 1 and needs only 2.</figcaption>
+          <div class="mini-row"><span class="mini-label">CPU</span><div class="mini-track"><span class="mini-block" style="flex-grow:6">A 0–6</span><span class="mini-block is-b" style="flex-grow:2">B 6–8</span></div></div>
+        </figure>
+        <p class="mode-help-note">B is shorter, but it cannot interrupt A, so it waits from 1 to 6. Every process appears as <b>one unbroken block</b>.</p>
+        <p class="mode-members">Non-preemptive here: FCFS · SJF</p>
+      </div>
+      <div class="mode-help-body" data-mode-panel="pre" hidden>
+        <h3 class="mode-help-title">Preemptive: the CPU can be taken away mid-run</h3>
+        <p>The scheduler may stop the running process before it finishes and give the CPU to another one. The stopped process goes back to waiting and later resumes where it left off; no work is lost or repeated.</p>
+        <figure class="mini-chart" aria-label="Example: A arrives at 0 needing 6 units, B arrives at 1 needing 2 units.">
+          <figcaption>Example: <b>A</b> arrives at 0 and needs 6 units; <b>B</b> arrives at 1 and needs only 2.</figcaption>
+          <div class="mini-row"><span class="mini-label">CPU</span><div class="mini-track"><span class="mini-block" style="flex-grow:1">A 0–1</span><span class="mini-block is-b" style="flex-grow:2">B 1–3</span><span class="mini-block" style="flex-grow:5">A 3–8</span></div></div>
+        </figure>
+        <p class="mode-help-note">Under SRTF, B needs 2 while A still needs 5, so B takes the CPU at 1. A resumes at 3, so it appears <b>in two pieces</b>. RR does the same when the quantum runs out, whatever the lengths.</p>
+        <p class="mode-members">Preemptive here: SRTF (a strictly shorter arrival) · RR (the quantum timer)</p>
+      </div>
+      <div class="mode-help-body" data-mode-panel="quantum" hidden>
+        <h3 class="mode-help-title">Quantum: the longest single turn in Round Robin</h3>
+        <p>In Round Robin each process may use the CPU for at most one quantum at a time. When its quantum runs out and it is not finished, it goes to the back of the queue and the next process gets a turn. A process that finishes early simply gives up the rest of its turn. Only RR uses the quantum, so the field is greyed out for the other policies.</p>
+        <figure class="mini-chart" aria-label="Example with quantum 2: A needs 5 units, B needs 3, both arrive at 0.">
+          <figcaption>Example with <b>quantum = 2</b>: <b>A</b> needs 5 units and <b>B</b> needs 3; both arrive at 0.</figcaption>
+          <div class="mini-row"><span class="mini-label">CPU</span><div class="mini-track"><span class="mini-block" style="flex-grow:2">A 0–2</span><span class="mini-block is-b" style="flex-grow:2">B 2–4</span><span class="mini-block" style="flex-grow:2">A 4–6</span><span class="mini-block is-b" style="flex-grow:1">B 6–7</span><span class="mini-block" style="flex-grow:1">A 7–8</span></div></div>
+        </figure>
+        <p class="mode-help-note">They alternate in turns of 2. B needs only 1 unit in its second turn, so it ends at 7 and A finishes at 8. A <b>smaller quantum</b> gives everyone an earlier first turn but chops the work into more pieces (switches are free here; a real OS pays for each one). A quantum <b>at least as long as every burst</b> means nobody is ever cut off, and RR behaves like FCFS.</p>
+        <p class="mode-members">Must be a positive whole number · used by RR only</p>
+      </div>
+    </section>
 
     <div class="tray">
       <button class="new-process" id="new-process" type="button" aria-describedby="tray-hint"><span aria-hidden="true">＋</span> New process</button>
@@ -51,7 +85,7 @@
     </div>
 
     <div class="chart-head">
-      <div><h2 id="result-title">SRTF · Shortest Remaining Time First</h2><p id="policy-description" class="policy-description"></p><p class="mode-line"><span id="policy-mode" class="mode-badge"></span> <span id="policy-mode-text"></span></p></div>
+      <div><h2 id="result-title">SRTF · Shortest Remaining Time First</h2><p id="policy-description" class="policy-description"></p><p class="mode-line"><button type="button" id="policy-mode" class="mode-badge" data-mode-help="pre" aria-controls="mode-help" aria-expanded="false"></button> <span id="policy-mode-text"></span></p></div>
       <span id="timeline-meta" class="meta"></span>
     </div>
     <p id="result-error" class="result-error" role="alert" hidden></p>
