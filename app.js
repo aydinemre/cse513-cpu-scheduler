@@ -11,10 +11,14 @@ const PAD_UNITS = 3; // empty time after the last completion, so a process can b
 const MAX_VALUE = 1_000_000;
 const NEW_BURST = 2;
 const policies = {
-  FCFS: { title: 'FCFS · First-Come, First-Served', description: 'The process that arrived first runs until it finishes. No interruptions.' },
-  SJF: { title: 'SJF · Shortest Job First', description: 'Whenever the CPU becomes free, the waiting process with the shortest burst runs until it finishes. No interruptions.' },
-  SRTF: { title: 'SRTF · Shortest Remaining Time First', description: 'The process with the least work left runs. A new arrival interrupts it only if it needs strictly less time.' },
-  RR: { title: 'RR · Round Robin', description: 'Processes take turns of at most one quantum each, in arrival order. An unfinished process goes to the back of the queue.' },
+  FCFS: { title: 'FCFS · First-Come, First-Served', description: 'The process that arrived first runs until it finishes.', preemptive: false,
+    mode: 'Once a process gets the CPU it keeps it until its burst is done, so every process is one unbroken block.' },
+  SJF: { title: 'SJF · Shortest Job First', description: 'Whenever the CPU becomes free, the waiting process with the shortest burst runs until it finishes.', preemptive: false,
+    mode: 'A shorter arrival still waits for the running process to finish, so every process is one unbroken block.' },
+  SRTF: { title: 'SRTF · Shortest Remaining Time First', description: 'The process with the least work left runs. A new arrival interrupts it only if it needs strictly less time.', preemptive: true,
+    mode: 'A strictly shorter arrival takes the CPU away; the interrupted process resumes later, so it can appear in pieces.' },
+  RR: { title: 'RR · Round Robin', description: 'Processes take turns of at most one quantum each, in arrival order. An unfinished process goes to the back of the queue.', preemptive: true,
+    mode: 'The quantum timer takes the CPU away; the unfinished process waits its next turn, so it can appear in pieces.' },
 };
 const workloads = {
   A: [{ id: 'P1', arrival: 0, burst: 8 }, { id: 'P2', arrival: 1, burst: 4 }, { id: 'P3', arrival: 2, burst: 2 }, { id: 'P4', arrival: 4, burst: 1 }],
@@ -111,6 +115,10 @@ function run() {
   const selected = algorithm();
   $('result-title').textContent = policies[selected].title;
   $('policy-description').textContent = policies[selected].description;
+  const preemptive = policies[selected].preemptive;
+  $('policy-mode').textContent = preemptive ? 'Preemptive' : 'Non-preemptive';
+  $('policy-mode').classList.toggle('is-preemptive', preemptive);
+  $('policy-mode-text').textContent = policies[selected].mode;
   $('quantum').disabled = selected !== 'RR';
   $('quantum').removeAttribute('aria-invalid');
   $('result-error').hidden = true;
@@ -408,6 +416,24 @@ function renderResult(result) {
   renderTimeline(result);
   renderMetrics(result);
   renderFrame(0);
+  if (policies[result.algorithm]?.preemptive) {
+    $('policy-mode-text').textContent = `${policies[result.algorithm].mode} ${interruptionSummary(result)}`;
+  }
+}
+
+// A process is interrupted when its slice ends before its burst is done and a different process takes the CPU.
+// Back-to-back RR slices of the same process are quantum boundaries, not interruptions.
+function interruptionSummary(result) {
+  const completion = new Map(result.metrics.map(row => [row.id, row.completion]));
+  const counts = new Map();
+  result.segments.forEach((segment, index) => {
+    const next = result.segments[index + 1];
+    if (completion.has(segment.id) && segment.end < completion.get(segment.id) && next && next.id !== segment.id) {
+      counts.set(segment.id, (counts.get(segment.id) || 0) + 1);
+    }
+  });
+  if (!counts.size) return 'In this schedule no process was interrupted.';
+  return `In this schedule: ${[...counts].map(([id, n]) => `${id} interrupted ${n}×`).join(', ')}.`;
 }
 
 /* Value drags: whole time units relative to where the drag started; the schedule is rebuilt on every change. */

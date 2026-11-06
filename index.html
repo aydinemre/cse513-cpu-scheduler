@@ -33,10 +33,14 @@
         <button class="chip ghost" id="clear-all" type="button">Clear</button>
       </div>
       <fieldset class="tool-group policy-group"><legend class="tool-label">Policy</legend>
-        <label class="chip policy-option"><input type="radio" name="algorithm" value="FCFS"><span>FCFS</span></label>
-        <label class="chip policy-option"><input type="radio" name="algorithm" value="SJF"><span>SJF</span></label>
-        <label class="chip policy-option"><input type="radio" name="algorithm" value="SRTF" checked><span>SRTF</span></label>
-        <label class="chip policy-option"><input type="radio" name="algorithm" value="RR"><span>RR</span></label>
+        <div class="policy-cluster" role="group" aria-labelledby="cluster-non"><span class="cluster-tag" id="cluster-non"><span class="mode-icon" aria-hidden="true"><i></i></span>Non-preemptive</span><div class="cluster-chips">
+          <label class="chip policy-option"><input type="radio" name="algorithm" value="FCFS"><span>FCFS</span></label>
+          <label class="chip policy-option"><input type="radio" name="algorithm" value="SJF"><span>SJF</span></label>
+        </div></div>
+        <div class="policy-cluster is-preemptive" role="group" aria-labelledby="cluster-pre"><span class="cluster-tag" id="cluster-pre"><span class="mode-icon is-split" aria-hidden="true"><i></i><i></i></span>Preemptive</span><div class="cluster-chips">
+          <label class="chip policy-option"><input type="radio" name="algorithm" value="SRTF" checked><span>SRTF</span></label>
+          <label class="chip policy-option"><input type="radio" name="algorithm" value="RR"><span>RR</span></label>
+        </div></div>
       </fieldset>
       <div class="tool-group quantum-group"><label class="tool-label" for="quantum">Quantum</label><input id="quantum" class="quantum-input" type="number" min="1" max="1000000" step="1" value="2" aria-describedby="quantum-hint"><span id="quantum-hint" class="sr-only">Round Robin only: the longest single turn</span></div>
     </div>
@@ -47,7 +51,7 @@
     </div>
 
     <div class="chart-head">
-      <div><h2 id="result-title">SRTF · Shortest Remaining Time First</h2><p id="policy-description" class="policy-description"></p></div>
+      <div><h2 id="result-title">SRTF · Shortest Remaining Time First</h2><p id="policy-description" class="policy-description"></p><p class="mode-line"><span id="policy-mode" class="mode-badge"></span> <span id="policy-mode-text"></span></p></div>
       <span id="timeline-meta" class="meta"></span>
     </div>
     <p id="result-error" class="result-error" role="alert" hidden></p>
@@ -96,11 +100,15 @@
 <section id="rules" class="rules" aria-labelledby="rules-title">
   <div class="wrap">
     <div class="section-title"><h2 id="rules-title">How each policy chooses the next process</h2></div>
+    <div class="mode-explainer">
+      <div class="mode-card"><span class="mode-badge"><span class="mode-icon" aria-hidden="true"><i></i></span>Non-preemptive</span><p><b>The CPU is never taken away.</b> Once a process starts, it runs until its whole burst is done. Others wait, even if a shorter one arrives. On the chart every process is <b>one unbroken block</b>.</p><p class="mode-members">FCFS · SJF</p></div>
+      <div class="mode-card is-preemptive"><span class="mode-badge"><span class="mode-icon is-split" aria-hidden="true"><i></i><i></i></span>Preemptive</span><p><b>The CPU can be taken away mid-run.</b> The interrupted process goes back to waiting and later resumes where it stopped, so it can appear <b>in several pieces</b>. SRTF interrupts when a strictly shorter process arrives; RR interrupts when the quantum runs out.</p><p class="mode-members">SRTF · RR</p></div>
+    </div>
     <ol class="rule-grid">
-      <li><span class="rule-name">FCFS · First-Come, First-Served</span><p>The process that arrived first runs until it finishes. Then the next earliest arrival runs.</p></li>
-      <li><span class="rule-name">SJF · Shortest Job First</span><p>Whenever the CPU becomes free, the waiting process with the shortest burst runs until it finishes. A running process is never interrupted.</p></li>
-      <li><span class="rule-name">SRTF · Shortest Remaining Time First</span><p>The process with the least work left runs. A new arrival interrupts it only if it needs strictly less time; on a tie, the running process continues.</p></li>
-      <li><span class="rule-name">RR · Round Robin</span><p>Processes take turns of at most one quantum in a first-in, first-out queue. A process that arrives exactly when a turn ends joins the queue before the process that was just interrupted. The <b>Edge case</b> workload shows this.</p></li>
+      <li><span class="rule-name">FCFS · First-Come, First-Served</span> <span class="mode-badge is-small">Non-preemptive</span><p>The process that arrived first runs until it finishes. Then the next earliest arrival runs.</p></li>
+      <li><span class="rule-name">SJF · Shortest Job First</span> <span class="mode-badge is-small">Non-preemptive</span><p>Whenever the CPU becomes free, the waiting process with the shortest burst runs until it finishes. A running process is never interrupted.</p></li>
+      <li><span class="rule-name">SRTF · Shortest Remaining Time First</span> <span class="mode-badge is-small is-preemptive">Preemptive</span><p>The process with the least work left runs. A new arrival interrupts it only if it needs strictly less time; on a tie, the running process continues.</p></li>
+      <li><span class="rule-name">RR · Round Robin</span> <span class="mode-badge is-small is-preemptive">Preemptive</span><p>Processes take turns of at most one quantum in a first-in, first-out queue. A process that arrives exactly when a turn ends joins the queue before the process that was just interrupted. The <b>Edge case</b> workload shows this.</p></li>
     </ol>
     <dl class="formula-strip">
       <div><dt>Turnaround</dt><dd>completion − arrival</dd></div>
